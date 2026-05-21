@@ -1,0 +1,43 @@
+{
+  "defaults": {
+    "hfsql": "flexi",
+    "mysql": "local",
+    "mssql": "erp"
+  },
+  "databases": {
+    "hfsql": {
+      "flexi": {
+        "dsn": "DSN=Flexi"
+      },
+      "demo": {
+        "dsn": "DSN=DemoHFSQL"
+      }
+    },
+    "mysql": {
+      "local": {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "root",
+        "password": "",
+        "database": "ma_base"
+      },
+      "autre": {
+        "host": "192.168.1.20",
+        "user": "app",
+        "password": "secret",
+        "database": "reporting"
+      }
+    },
+    "mssql": {
+      "erp": {
+        "server": "127.0.0.1",
+        "port": 1433,
+        "user": "sa",
+        "password": "",
+        "database": "ERP",
+        "encrypt": true,
+        "trustServerCertificate": true
+      }
+    }
+  }
+}

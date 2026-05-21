@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Administration — Connexions MCP</title>
+  <style>
+    :root {
+      --bg0: #090b10;
+      --bg1: #12151c;
+      --surface: #181c27;
+      --surface2: #1e2433;
+      --elevated: #232a3b;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.14);
+      --text: #f1f4f9;
+      --text2: #a8b3c9;
+      --muted: #6b7a95;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-muted: rgba(99, 102, 241, 0.15);
+      --danger: #f43f5e;
+      --danger-muted: rgba(244, 63, 94, 0.12);
+      --ok: #34d399;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+      --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.55);
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 15% -10%, rgba(99, 102, 241, 0.12), transparent 50%),
+        radial-gradient(900px 500px at 95% 0%, rgba(52, 211, 153, 0.06), transparent 45%),
+        linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 40%, var(--bg0) 100%);
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(9, 11, 16, 0.82);
+      border-bottom: 1px solid var(--border);
+    }
+    .app-header-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+      flex-shrink: 0;
+      font-size: 0.5625rem;
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.04em;
+      color: #fff;
+      text-align: center;
+      padding: 0.25rem;
+      overflow: hidden;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .brand p {
+      margin: 0.1rem 0 0;
+      font-size: 0.8rem;
+      color: var(--text2);
+      max-width: 36ch;
+    }
+
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1rem;
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface2);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+    .btn:hover:not(:disabled) {
+      background: var(--elevated);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--text2);
+    }
+    .btn-ghost:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+    .btn-primary {
+      background: var(--accent);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(99, 102, 241, 0.35);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+    .btn-danger {
+      background: var(--danger-muted);
+      border-color: rgba(244, 63, 94, 0.35);
+      color: #fda4af;
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: rgba(244, 63, 94, 0.22);
+      color: #fecdd3;
+    }
+    .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.75rem; border-radius: 8px; }
+    .btn-icon { padding: 0.45rem 0.55rem; min-width: 2.25rem; }
+
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+    }
+
+    .hint {
+      font-size: 0.8125rem;
+      color: var(--text2);
+      margin: 0 0 1.5rem;
+      padding: 0.85rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .hint code {
+      font-size: 0.78em;
+      padding: 0.12em 0.35em;
+      border-radius: 6px;
+      background: var(--bg1);
+      border: 1px solid var(--border);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1rem 1.15rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+    }
+    .card-head h2 {
+      margin: 0;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .card-head-title {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+    .card-head-title strong {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .badge {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: var(--accent-muted);
+      color: #c7d2fe;
+    }
+    .card-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+    th, td {
+      padding: 0.75rem 1.15rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    th {
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    tbody tr {
+      transition: background 0.12s;
+    }
+    tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+    tbody tr:last-child td { border-bottom: none; }
+    .cell-name { font-weight: 600; color: var(--text); }
+    .cell-meta { color: var(--text2); }
+    .cell-meta code {
+      font-size: 0.85em;
+      padding: 0.1em 0.35em;
+      border-radius: 6px;
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      color: #c7d2fe;
+    }
+    .cell-actions {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .cell-actions .btn { margin-left: 0.35rem; }
+    .empty-row td {
+      color: var(--muted);
+      font-style: italic;
+      padding: 1.25rem 1.15rem;
+    }
+
+    .defaults-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      padding: 1.15rem;
+    }
+    @media (max-width: 800px) {
+      .defaults-grid { grid-template-columns: 1fr; }
+    }
+    .field label {
+      display: block;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    .field input {
+      width: 100%;
+      padding: 0.55rem 0.65rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg1);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.875rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: rgba(99, 102, 241, 0.55);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    /* Modales */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      padding: 1.25rem;
+      overflow-y: auto;
+      align-items: flex-start;
+      justify-content: center;
+      background: rgba(5, 7, 12, 0.72);
+      backdrop-filter: blur(6px);
+    }
+    .overlay.open { display: flex; }
+    .panel {
+      width: 100%;
+      max-width: 480px;
+      margin: auto 0;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: calc(var(--radius) + 2px);
+      box-shadow: var(--shadow-lg);
+      animation: panelIn 0.22s ease-out;
+    }
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .panel-wide { max-width: 520px; }
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.15rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-head h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .panel-head p {
+      margin: 0.35rem 0 0;
+      font-size: 0.8125rem;
+      color: var(--text2);
+      line-height: 1.45;
+    }
+    .btn-close {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.35rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-close:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    .panel-body { padding: 1.15rem 1.25rem 1.25rem; }
+    .panel-foot {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding: 0.85rem 1.25rem 1.15rem;
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+    }
+    .form-error {
+      margin: 0 0 0.85rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 10px;
+      font-size: 0.8125rem;
+      background: var(--danger-muted);
+      border: 1px solid rgba(244, 63, 94, 0.25);
+      color: #fecdd3;
+      display: none;
+    }
+    .form-error.visible { display: block; }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 520px) { .grid2 { grid-template-columns: 1fr; } }
+    .panel-body .field { margin-bottom: 0.85rem; }
+    .panel-body .field:last-child { margin-bottom: 0; }
+    .panel-body input {
+      width: 100%;
+      padding: 0.55rem 0.65rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg1);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.875rem;
+    }
+    .panel-body input:focus {
+      outline: none;
+      border-color: rgba(99, 102, 241, 0.55);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    }
+    .chk {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-top: 0.25rem;
+    }
+    .chk input { width: auto; accent-color: var(--accent); }
+    .chk label { margin: 0; font-size: 0.8125rem; color: var(--text2); cursor: pointer; }
+
+    /* Snackbar succès (pas une alerte native) */
+    #snackbar {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      z-index: 200;
+      padding: 0.65rem 1.15rem;
+      border-radius: 999px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      background: var(--elevated);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s;
+      pointer-events: none;
+      max-width: min(90vw, 420px);
+      text-align: center;
+    }
+    #snackbar.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    #snackbar.ok { border-color: rgba(52, 211, 153, 0.35); color: #a7f3d0; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">MCP SQL</div>
+        <div>
+          <h1>Connexions bases de données</h1>
+          <p>Configuration du fichier <code>databases.json</code></p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn btn-ghost" id="btnReload">Recharger</button>
+        <button type="button" class="btn btn-primary" id="btnSaveAll">Enregistrer les modifications</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-title">
+          <h2>Par défaut</h2>
+          <strong>Connexions par défaut</strong>
+        </div>
+        <span class="badge" title="Utilisé si l’URL MCP omet name=">si name= absent</span>
+      </div>
+      <div class="defaults-grid">
+        <div class="field">
+          <label for="def-hfsql">HFSQL</label>
+          <input id="def-hfsql" type="text" placeholder="ex. flexi" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="def-mysql">MySQL</label>
+          <input id="def-mysql" type="text" placeholder="ex. local" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="def-mssql">Microsoft SQL</label>
+          <input id="def-mssql" type="text" placeholder="ex. erp" autocomplete="off" />
+        </div>
+      </div>
+    </div>
+
+    <div id="tables"></div>
+  </main>
+
+  <!-- Modale formulaire connexion -->
+  <div class="overlay" id="overlay-form" role="dialog" aria-modal="true" aria-labelledby="form-title">
+    <div class="panel panel-wide">
+      <div class="panel-head">
+        <div>
+          <h3 id="form-title">Connexion</h3>
+          <p id="form-sub">Renseignez les champs ci-dessous.</p>
+        </div>
+        <button type="button" class="btn-close" id="form-close" aria-label="Fermer">×</button>
+      </div>
+      <div class="panel-body">
+        <p class="form-error" id="form-error" role="alert"></p>
+        <div id="form-fields"></div>
+      </div>
+      <div class="panel-foot">
+        <button type="button" class="btn btn-ghost" id="form-cancel">Annuler</button>
+        <button type="button" class="btn btn-primary" id="form-submit">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale confirmation suppression -->
+  <div class="overlay" id="overlay-delete" role="dialog" aria-modal="true" aria-labelledby="del-title">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 id="del-title">Supprimer la connexion</h3>
+          <p id="del-msg">Cette action est immédiate sur le fichier de configuration.</p>
+        </div>
+        <button type="button" class="btn-close" id="del-close" aria-label="Fermer">×</button>
+      </div>
+      <div class="panel-foot">
+        <button type="button" class="btn btn-ghost" id="del-cancel">Annuler</button>
+        <button type="button" class="btn btn-danger" id="del-confirm">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale message (erreur / info) -->
+  <div class="overlay" id="overlay-msg" role="dialog" aria-modal="true" aria-labelledby="msg-title">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 id="msg-title">Message</h3>
+          <p id="msg-body"></p>
+        </div>
+        <button type="button" class="btn-close" id="msg-close" aria-label="Fermer">×</button>
+      </div>
+      <div class="panel-foot">
+        <button type="button" class="btn btn-primary" id="msg-ok">Compris</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="snackbar" role="status" aria-live="polite"></div>
+
+  <script>
+(function () {
+  const qs = new URLSearchParams(location.search);
+  const fromUrl = qs.get("token");
+  if (fromUrl) {
+    sessionStorage.setItem("mcp_api_key", fromUrl);
+    qs.delete("token");
+    const q = qs.toString();
+    history.replaceState(null, "", q ? "?" + q : location.pathname);
+  }
+
+  function apiKey() {
+    return sessionStorage.getItem("mcp_api_key") || "";
+  }
+  function headers() {
+    const k = apiKey();
+    const h = { "Content-Type": "application/json" };
+    if (k) h["x-api-key"] = k;
+    return h;
+  }
+
+  const overlayForm = document.getElementById("overlay-form");
+  const overlayDelete = document.getElementById("overlay-delete");
+  const overlayMsg = document.getElementById("overlay-msg");
+  const formError = document.getElementById("form-error");
+  const formFields = document.getElementById("form-fields");
+  const formTitle = document.getElementById("form-title");
+  const formSub = document.getElementById("form-sub");
+  const snackbar = document.getElementById("snackbar");
+  let snackTimer;
+
+  function showSnack(text, ok) {
+    snackbar.textContent = text;
+    snackbar.className = ok ? "ok show" : "show";
+    clearTimeout(snackTimer);
+    snackTimer = setTimeout(function () {
+      snackbar.classList.remove("show");
+    }, 2800);
+  }
+
+  function openMsg(title, body, isError) {
+    document.getElementById("msg-title").textContent = title;
+    document.getElementById("msg-body").textContent = body;
+    document.getElementById("msg-title").style.color = isError ? "#fda4af" : "";
+    overlayMsg.classList.add("open");
+  }
+  function closeMsg() {
+    overlayMsg.classList.remove("open");
+    document.getElementById("msg-title").style.color = "";
+  }
+
+  function openOverlay(el) {
+    el.classList.add("open");
+    document.documentElement.style.overflow = "hidden";
+  }
+  function closeOverlay(el) {
+    el.classList.remove("open");
+    if (!document.querySelector(".overlay.open")) {
+      document.documentElement.style.overflow = "";
+    }
+  }
+
+  let config = null;
+  let formMode = "add";
+  let formType = "mysql";
+  let formName = "";
+  let deleteTarget = { type: "", name: "" };
+
+  function emptyConfig() {
+    return {
+      defaults: {},
+      databases: { hfsql: {}, mysql: {}, mssql: {} },
+    };
+  }
+
+  function setFormError(text) {
+    if (!text) {
+      formError.textContent = "";
+      formError.classList.remove("visible");
+    } else {
+      formError.textContent = text;
+      formError.classList.add("visible");
+    }
+  }
+
+  async function load() {
+    const r = await fetch("/admin/api/config", { headers: headers() });
+    if (r.status === 401) {
+      config = emptyConfig();
+      bindDefaults();
+      renderTables();
+      openMsg(
+        "Non autorisé",
+        "Ajoutez ?token=VOTRE_API_KEY à l’URL une première fois, ou configurez l’en-tête x-api-key pour appeler l’API.",
+        true
+      );
+      return;
+    }
+    if (!r.ok) {
+      const j = await r.json().catch(function () { return {}; });
+      openMsg("Erreur", j.error || "Impossible de charger la configuration (" + r.status + ").", true);
+      return;
+    }
+    config = await r.json();
+    bindDefaults();
+    renderTables();
+    showSnack("Configuration chargée", true);
+  }
+
+  function bindDefaults() {
+    if (!config) return;
+    document.getElementById("def-hfsql").value = config.defaults?.hfsql || "";
+    document.getElementById("def-mysql").value = config.defaults?.mysql || "";
+    document.getElementById("def-mssql").value = config.defaults?.mssql || "";
+  }
+
+  function readDefaultsFromForm() {
+    const h = document.getElementById("def-hfsql").value.trim();
+    const my = document.getElementById("def-mysql").value.trim();
+    const ms = document.getElementById("def-mssql").value.trim();
+    const defs = {};
+    if (h) defs.hfsql = h;
+    if (my) defs.mysql = my;
+    if (ms) defs.mssql = ms;
+    return defs;
+  }
+
+  const typeLabels = { hfsql: "HFSQL (ODBC)", mysql: "MySQL", mssql: "Microsoft SQL Server" };
+
+  function renderTables() {
+    if (!config) return;
+    const host = document.getElementById("tables");
+    host.innerHTML = "";
+    for (const type of ["hfsql", "mysql", "mssql"]) {
+      const card = document.createElement("div");
+      card.className = "card";
+      const entries = config.databases[type] || {};
+      const names = Object.keys(entries).sort();
+      const head = document.createElement("div");
+      head.className = "card-head";
+      head.innerHTML =
+        '<div class="card-head-title">' +
+        '<h2>Moteur</h2>' +
+        "<strong>" +
+        typeLabels[type] +
+        "</strong>" +
+        '<span class="badge">' +
+        names.length +
+        " connexion" +
+        (names.length !== 1 ? "s" : "") +
+        "</span></div>" +
+        '<div class="card-actions">' +
+        '<button type="button" class="btn btn-primary btn-sm" data-add="' +
+        type +
+        '">+ Ajouter</button></div>';
+      card.appendChild(head);
+      const wrap = document.createElement("div");
+      wrap.className = "table-wrap";
+      const tbl = document.createElement("table");
+      const thead = document.createElement("thead");
+      thead.innerHTML =
+        type === "hfsql"
+          ? "<tr><th>Nom</th><th>DSN</th><th style=\"width:1%\">Actions</th></tr>"
+          : type === "mysql"
+            ? "<tr><th>Nom</th><th>Hôte · base</th><th style=\"width:1%\">Actions</th></tr>"
+            : "<tr><th>Nom</th><th>Serveur · base</th><th style=\"width:1%\">Actions</th></tr>";
+      tbl.appendChild(thead);
+      const tb = document.createElement("tbody");
+      if (names.length === 0) {
+        const tr = document.createElement("tr");
+        tr.className = "empty-row";
+        tr.innerHTML = '<td colspan="3">Aucune connexion pour ce moteur.</td>';
+        tb.appendChild(tr);
+      }
+      for (let i = 0; i < names.length; i++) {
+        const name = names[i];
+        const e = entries[name];
+        const tr = document.createElement("tr");
+        let meta = "";
+        if (type === "hfsql") {
+          meta = '<span class="cell-meta"><code>' + escapeHtml(e.dsn || "") + "</code></span>";
+        } else if (type === "mysql") {
+          meta =
+            '<span class="cell-meta">' +
+            escapeHtml(e.host || "") +
+            (e.port ? ":" + e.port : "") +
+            ' · <code>' +
+            escapeHtml(e.database || "") +
+            "</code></span>";
+        } else {
+          meta =
+            '<span class="cell-meta">' +
+            escapeHtml(e.server || "") +
+            (e.port ? ":" + e.port : "") +
+            ' · <code>' +
+            escapeHtml(e.database || "") +
+            "</code></span>";
+        }
+        tr.innerHTML =
+          '<td class="cell-name">' +
+          escapeHtml(name) +
+          "</td><td>" +
+          meta +
+          '</td><td class="cell-actions"></td>';
+        const actions = tr.querySelector(".cell-actions");
+        const bEd = document.createElement("button");
+        bEd.type = "button";
+        bEd.className = "btn btn-ghost btn-sm";
+        bEd.textContent = "Modifier";
+        bEd.addEventListener("click", function () {
+          openFormModal("edit", type, name, e);
+        });
+        const bDel = document.createElement("button");
+        bDel.type = "button";
+        bDel.className = "btn btn-danger btn-sm";
+        bDel.textContent = "Supprimer";
+        bDel.addEventListener("click", function () {
+          openDeleteModal(type, name);
+        });
+        actions.appendChild(bEd);
+        actions.appendChild(bDel);
+        tb.appendChild(tr);
+      }
+      tbl.appendChild(tb);
+      wrap.appendChild(tbl);
+      card.appendChild(wrap);
+      host.appendChild(card);
+      head.querySelector("[data-add]").addEventListener("click", function () {
+        openFormModal("add", type, "", null);
+      });
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function saveAll() {
+    if (!config) return;
+    config.defaults = readDefaultsFromForm();
+    const r = await fetch("/admin/api/config", {
+      method: "PUT",
+      headers: headers(),
+      body: JSON.stringify(config),
+    });
+    const j = await r.json().catch(function () { return {}; });
+    if (!r.ok) {
+      openMsg("Enregistrement refusé", j.error || "Erreur " + r.status + ".", true);
+      if (j.details) console.error(j.details);
+      return;
+    }
+    config = j.config;
+    bindDefaults();
+    renderTables();
+    showSnack("Modifications enregistrées", true);
+  }
+
+  function openDeleteModal(type, name) {
+    deleteTarget = { type: type, name: name };
+    document.getElementById("del-msg").textContent =
+      "Supprimer « " + name + " » (" + typeLabels[type] + ") ? Les valeurs par défaut qui pointaient vers ce nom seront retirées.";
+    openOverlay(overlayDelete);
+  }
+
+  async function runDelete() {
+    const type = deleteTarget.type;
+    const name = deleteTarget.name;
+    closeOverlay(overlayDelete);
+    const r = await fetch(
+      "/admin/api/connection/" + encodeURIComponent(type) + "/" + encodeURIComponent(name),
+      { method: "DELETE", headers: headers() }
+    );
+    const j = await r.json().catch(function () { return {}; });
+    if (!r.ok) {
+      openMsg("Suppression impossible", j.error || "Erreur " + r.status + ".", true);
+      return;
+    }
+    config = j.config;
+    bindDefaults();
+    renderTables();
+    showSnack("Connexion supprimée", true);
+  }
+
+  function openFormModal(mode, type, name, entry) {
+    setFormError("");
+    formMode = mode;
+    formType = type;
+    formName = name || "";
+    formTitle.textContent =
+      mode === "add" ? "Nouvelle connexion · " + typeLabels[type] : "Modifier · " + name;
+    formSub.textContent =
+      mode === "add"
+        ? "Identifiant unique pour cette connexion, puis les paramètres."
+        : "Mettez à jour les paramètres, puis enregistrez.";
+
+    if (type === "hfsql") {
+      formFields.innerHTML =
+        (mode === "add"
+          ? '<div class="field"><label for="f_name">Identifiant</label><input id="f_name" autocomplete="off" placeholder="ex. flexi_prod" /></div>'
+          : "") +
+        '<div class="field"><label for="f_dsn">Chaîne DSN ODBC</label><input id="f_dsn" placeholder="DSN=MaSource" /></div>';
+      if (entry) document.getElementById("f_dsn").value = entry.dsn || "";
+    } else if (type === "mysql") {
+      formFields.innerHTML =
+        (mode === "add"
+          ? '<div class="field"><label for="f_name">Identifiant</label><input id="f_name" autocomplete="off" placeholder="ex. reporting" /></div>'
+          : "") +
+        '<div class="grid2">' +
+        '<div class="field"><label for="f_host">Hôte</label><input id="f_host" /></div>' +
+        '<div class="field"><label for="f_port">Port</label><input id="f_port" type="number" placeholder="3306" /></div></div>' +
+        '<div class="grid2">' +
+        '<div class="field"><label for="f_user">Utilisateur</label><input id="f_user" autocomplete="username" /></div>' +
+        '<div class="field"><label for="f_pass">Mot de passe</label><input id="f_pass" type="password" autocomplete="new-password" /></div></div>' +
+        '<div class="field"><label for="f_db">Base de données</label><input id="f_db" /></div>';
+      if (entry) {
+        document.getElementById("f_host").value = entry.host || "";
+        document.getElementById("f_port").value = entry.port || "";
+        document.getElementById("f_user").value = entry.user || "";
+        document.getElementById("f_pass").value = entry.password || "";
+        document.getElementById("f_db").value = entry.database || "";
+      }
+    } else {
+      formFields.innerHTML =
+        (mode === "add"
+          ? '<div class="field"><label for="f_name">Identifiant</label><input id="f_name" autocomplete="off" /></div>'
+          : "") +
+        '<div class="grid2">' +
+        '<div class="field"><label for="f_server">Serveur</label><input id="f_server" /></div>' +
+        '<div class="field"><label for="f_port">Port</label><input id="f_port" type="number" placeholder="1433" /></div></div>' +
+        '<div class="grid2">' +
+        '<div class="field"><label for="f_user">Utilisateur</label><input id="f_user" autocomplete="username" /></div>' +
+        '<div class="field"><label for="f_pass">Mot de passe</label><input id="f_pass" type="password" autocomplete="new-password" /></div></div>' +
+        '<div class="field"><label for="f_db">Base de données</label><input id="f_db" /></div>' +
+        '<div class="chk"><input type="checkbox" id="f_enc" /><label for="f_enc">Chiffrement TLS (encrypt)</label></div>' +
+        '<div class="chk"><input type="checkbox" id="f_trust" /><label for="f_trust">Trust server certificate</label></div>';
+      if (entry) {
+        document.getElementById("f_server").value = entry.server || "";
+        document.getElementById("f_port").value = entry.port || "";
+        document.getElementById("f_user").value = entry.user || "";
+        document.getElementById("f_pass").value = entry.password || "";
+        document.getElementById("f_db").value = entry.database || "";
+        document.getElementById("f_enc").checked = entry.encrypt === true;
+        document.getElementById("f_trust").checked = entry.trustServerCertificate === true;
+      }
+    }
+    openOverlay(overlayForm);
+    const first = formFields.querySelector("input");
+    if (first) setTimeout(function () { first.focus(); }, 50);
+  }
+
+  function closeFormModal() {
+    closeOverlay(overlayForm);
+    setFormError("");
+  }
+
+  function parsePort(id) {
+    const el = document.getElementById(id);
+    if (!el) return undefined;
+    const v = el.value.trim();
+    if (!v) return undefined;
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  }
+
+  function formSubmit() {
+    if (!config) return;
+    setFormError("");
+    const type = formType;
+    let name = formName;
+    if (formMode === "add") {
+      name = document.getElementById("f_name").value.trim();
+      if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+        setFormError("Identifiant invalide : lettres, chiffres, tiret et underscore uniquement.");
+        return;
+      }
+      if (config.databases[type][name]) {
+        setFormError("Cet identifiant existe déjà pour ce moteur.");
+        return;
+      }
+    }
+    let entry;
+    if (type === "hfsql") {
+      const dsn = document.getElementById("f_dsn").value.trim();
+      if (!dsn) {
+        setFormError("La chaîne DSN est obligatoire.");
+        return;
+      }
+      entry = { dsn: dsn };
+    } else if (type === "mysql") {
+      const host = document.getElementById("f_host").value.trim();
+      const user = document.getElementById("f_user").value.trim();
+      const database = document.getElementById("f_db").value.trim();
+      if (!host || !user || !database) {
+        setFormError("Hôte, utilisateur et base de données sont obligatoires.");
+        return;
+      }
+      entry = {
+        host: host,
+        user: user,
+        password: document.getElementById("f_pass").value,
+        database: database,
+      };
+      const p = parsePort("f_port");
+      if (p) entry.port = p;
+    } else {
+      const server = document.getElementById("f_server").value.trim();
+      const user = document.getElementById("f_user").value.trim();
+      const database = document.getElementById("f_db").value.trim();
+      if (!server || !user || !database) {
+        setFormError("Serveur, utilisateur et base de données sont obligatoires.");
+        return;
+      }
+      entry = {
+        server: server,
+        user: user,
+        password: document.getElementById("f_pass").value,
+        database: database,
+        encrypt: document.getElementById("f_enc").checked,
+        trustServerCertificate: document.getElementById("f_trust").checked,
+      };
+      const p = parsePort("f_port");
+      if (p) entry.port = p;
+    }
+    config.databases[type][name] = entry;
+    closeFormModal();
+    saveAll();
+  }
+
+  function wireOverlayClose(overlay, closeFn) {
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeFn();
+    });
+  }
+
+  document.getElementById("btnReload").addEventListener("click", load);
+  document.getElementById("btnSaveAll").addEventListener("click", saveAll);
+
+  document.getElementById("form-close").addEventListener("click", closeFormModal);
+  document.getElementById("form-cancel").addEventListener("click", closeFormModal);
+  document.getElementById("form-submit").addEventListener("click", formSubmit);
+  wireOverlayClose(overlayForm, closeFormModal);
+
+  document.getElementById("del-close").addEventListener("click", function () {
+    closeOverlay(overlayDelete);
+  });
+  document.getElementById("del-cancel").addEventListener("click", function () {
+    closeOverlay(overlayDelete);
+  });
+  document.getElementById("del-confirm").addEventListener("click", runDelete);
+  wireOverlayClose(overlayDelete, function () {
+    closeOverlay(overlayDelete);
+  });
+
+  document.getElementById("msg-close").addEventListener("click", closeMsg);
+  document.getElementById("msg-ok").addEventListener("click", closeMsg);
+  wireOverlayClose(overlayMsg, closeMsg);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (overlayMsg.classList.contains("open")) closeMsg();
+    else if (overlayForm.classList.contains("open")) closeFormModal();
+    else if (overlayDelete.classList.contains("open")) closeOverlay(overlayDelete);
+  });
+
+  ["def-hfsql", "def-mysql", "def-mssql"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", function () {
+      if (config) config.defaults = readDefaultsFromForm();
+    });
+  });
+
+  load();
+})();
+  </script>
+</body>
+</html>
