@@ -1,16 +1,16 @@
 {
   "defaults": {
-    "hfsql": "flexi",
+    "odbc": "flexi",
     "mysql": "local",
     "mssql": "erp"
   },
   "databases": {
-    "hfsql": {
+    "odbc": {
       "flexi": {
         "dsn": "DSN=Flexi"
       },
       "demo": {
-        "dsn": "DSN=DemoHFSQL"
+        "dsn": "DSN=DemoODBC"
       }
     },
     "mysql": {

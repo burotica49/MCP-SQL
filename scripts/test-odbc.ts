@@ -1,12 +1,12 @@
 /**
- * Teste une connexion ODBC (ex. HFSQL) sans top-level await (compatible CJS / tsx).
+ * Teste une connexion ODBC (ex. ODBC) sans top-level await (compatible CJS / tsx).
  *
- * HFSQL ne gère pas bien `SELECT 1` (pseudo-table ###DUAL0###) : on utilise les
+ * ODBC ne gère pas bien `SELECT 1` (pseudo-table ###DUAL0###) : on utilise les
  * métadonnées ODBC `tables()` pour valider la connexion.
  *
  * Usage :
  *   npx tsx scripts/test-odbc.ts "DSN=Flexigestion"
- *   npx tsx scripts/test-odbc.ts          (utilise HFSQL_DSN dans .env)
+ *   npx tsx scripts/test-odbc.ts          (utilise ODBC_DSN dans .env)
  *
  * Optionnel — exécuter une requête SELECT sur une vraie table :
  *   npx tsx scripts/test-odbc.ts "DSN=Flexi" "SELECT TOP 1 * FROM MaTable"
@@ -14,12 +14,12 @@
 import "dotenv/config";
 import odbc from "odbc";
 
-const dsn = process.argv[2]?.trim() || process.env.HFSQL_DSN?.trim();
+const dsn = process.argv[2]?.trim() || process.env.ODBC_DSN?.trim();
 const optionalSql = process.argv[3]?.trim();
 
 if (!dsn) {
   console.error(
-    "Indique le DSN en argument ou définis HFSQL_DSN dans .env, ex. :\n" +
+    "Indique le DSN en argument ou définis ODBC_DSN dans .env, ex. :\n" +
       '  npx tsx scripts/test-odbc.ts "DSN=Flexigestion"'
   );
   process.exit(1);
@@ -49,7 +49,7 @@ void (async () => {
     }
 
     await c.close();
-    console.log("OK — ODBC / HFSQL répond.");
+    console.log("OK — ODBC / ODBC répond.");
   } catch (e) {
     console.error("Échec ODBC :", e);
     process.exit(1);

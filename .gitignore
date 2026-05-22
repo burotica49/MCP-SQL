@@ -136,3 +136,6 @@ dist
 
 # databases.json
 databases.json
+
+# zip
+*.zip

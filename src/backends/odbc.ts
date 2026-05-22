@@ -2,7 +2,7 @@ import odbc from "odbc";
 import { assertSimpleTableName } from "./identifiers";
 import type { DatabaseBackend } from "./types";
 
-/** Une connexion ODBC par chaîne DSN (plusieurs bases HFSQL possibles). */
+/** Une connexion ODBC par chaîne DSN (plusieurs bases ODBC possibles). */
 const connections = new Map<string, odbc.Connection>();
 
 const ODBC_HINT =
@@ -35,7 +35,7 @@ function createBackend(conn: odbc.Connection): DatabaseBackend {
   };
 }
 
-export async function getHfsqlBackendForDsn(dsn: string): Promise<DatabaseBackend> {
+export async function getOdbcBackendForDsn(dsn: string): Promise<DatabaseBackend> {
   if (!connections.has(dsn)) {
     try {
       connections.set(dsn, await odbc.connect(dsn));
@@ -47,11 +47,11 @@ export async function getHfsqlBackendForDsn(dsn: string): Promise<DatabaseBacken
   return createBackend(conn);
 }
 
-/** Repli : variable d’environnement `HFSQL_DSN`. */
-export async function getHfsqlBackend(): Promise<DatabaseBackend> {
-  const dsn = process.env.HFSQL_DSN;
+/** Repli : variable d’environnement `ODBC_DSN`. */
+export async function getOdbcBackend(): Promise<DatabaseBackend> {
+  const dsn = process.env.ODBC_DSN;
   if (!dsn) {
-    throw new Error("HFSQL_DSN non défini dans l'environnement.");
+    throw new Error("ODBC_DSN non défini dans l'environnement.");
   }
-  return getHfsqlBackendForDsn(dsn);
+  return getOdbcBackendForDsn(dsn);
 }

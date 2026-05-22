@@ -70,9 +70,9 @@ adminApiRouter.get("/mcp-url", (req, res) => {
     .trim();
   const name = String(req.query.name ?? "").trim();
 
-  if (type !== "hfsql" && type !== "mysql" && type !== "mssql") {
+  if (type !== "odbc" && type !== "mysql" && type !== "mssql") {
     return res.status(400).json({
-      error: "Paramètre type requis : hfsql, mysql ou mssql.",
+      error: "Paramètre type requis : odbc, mysql ou mssql.",
     });
   }
   try {
@@ -122,7 +122,7 @@ adminApiRouter.delete("/connection/:type/:name", (req, res) => {
   const { type, name: rawName } = req.params;
   const name = decodeURIComponent(rawName);
 
-  if (type !== "hfsql" && type !== "mysql" && type !== "mssql") {
+  if (type !== "odbc" && type !== "mysql" && type !== "mssql") {
     return res.status(400).json({ error: "Type invalide" });
   }
   try {
@@ -135,7 +135,7 @@ adminApiRouter.delete("/connection/:type/:name", (req, res) => {
 
   try {
     const next = getDatabasesConfigNormalized();
-    const key = type as "hfsql" | "mysql" | "mssql";
+    const key = type as "odbc" | "mysql" | "mssql";
     if (!next.databases[key][name]) {
       return res.status(404).json({ error: "Connexion introuvable" });
     }

@@ -24,8 +24,8 @@ const ALLOWED_IPS: string[] = process.env.ALLOWED_IPS
 
 function backendLabel(type: BackendType): string {
   switch (type) {
-    case "hfsql":
-      return "HFSQL (ODBC)";
+    case "odbc":
+      return "ODBC";
     case "mysql":
       return "MySQL";
     case "mssql":

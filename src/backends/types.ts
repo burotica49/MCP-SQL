@@ -1,4 +1,4 @@
-export type BackendType = "hfsql" | "mysql" | "mssql";
+export type BackendType = "odbc" | "mysql" | "mssql";
 
 /** Accès lecture / métadonnées, indépendant du moteur sous-jacent. */
 export interface DatabaseBackend {

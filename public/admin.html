@@ -515,8 +515,8 @@
       </div>
       <div class="defaults-grid">
         <div class="field">
-          <label for="def-hfsql">ODBC HFSQL</label>
-          <input id="def-hfsql" type="text" placeholder="ex. flexi" autocomplete="off" />
+          <label for="def-odbc">ODBC</label>
+          <input id="def-odbc" type="text" placeholder="ex. flexi" autocomplete="off" />
         </div>
         <div class="field">
           <label for="def-mysql">MySQL</label>
@@ -747,7 +747,7 @@
   function emptyConfig() {
     return {
       defaults: {},
-      databases: { hfsql: {}, mysql: {}, mssql: {} },
+      databases: { odbc: {}, mysql: {}, mssql: {} },
     };
   }
 
@@ -787,29 +787,29 @@
 
   function bindDefaults() {
     if (!config) return;
-    document.getElementById("def-hfsql").value = config.defaults?.hfsql || "";
+    document.getElementById("def-odbc").value = config.defaults?.odbc || "";
     document.getElementById("def-mysql").value = config.defaults?.mysql || "";
     document.getElementById("def-mssql").value = config.defaults?.mssql || "";
   }
 
   function readDefaultsFromForm() {
-    const h = document.getElementById("def-hfsql").value.trim();
+    const h = document.getElementById("def-odbc").value.trim();
     const my = document.getElementById("def-mysql").value.trim();
     const ms = document.getElementById("def-mssql").value.trim();
     const defs = {};
-    if (h) defs.hfsql = h;
+    if (h) defs.odbc = h;
     if (my) defs.mysql = my;
     if (ms) defs.mssql = ms;
     return defs;
   }
 
-  const typeLabels = { hfsql: "HFSQL (ODBC)", mysql: "MySQL", mssql: "Microsoft SQL Server" };
+  const typeLabels = { odbc: "ODBC", mysql: "MySQL", mssql: "Microsoft SQL Server" };
 
   function renderTables() {
     if (!config) return;
     const host = document.getElementById("tables");
     host.innerHTML = "";
-    for (const type of ["hfsql", "mysql", "mssql"]) {
+    for (const type of ["odbc", "mysql", "mssql"]) {
       const card = document.createElement("div");
       card.className = "card";
       const entries = config.databases[type] || {};
@@ -837,7 +837,7 @@
       const tbl = document.createElement("table");
       const thead = document.createElement("thead");
       thead.innerHTML =
-        type === "hfsql"
+        type === "odbc"
           ? "<tr><th>Nom</th><th>DSN</th><th style=\"width:1%\">Actions</th></tr>"
           : type === "mysql"
             ? "<tr><th>Nom</th><th>Hôte · base</th><th style=\"width:1%\">Actions</th></tr>"
@@ -855,7 +855,7 @@
         const e = entries[name];
         const tr = document.createElement("tr");
         let meta = "";
-        if (type === "hfsql") {
+        if (type === "odbc") {
           meta = '<span class="cell-meta"><code>' + escapeHtml(e.dsn || "") + "</code></span>";
         } else if (type === "mysql") {
           meta =
@@ -984,7 +984,7 @@
         ? "Identifiant unique pour cette connexion, puis les paramètres."
         : "Mettez à jour les paramètres, puis enregistrez.";
 
-    if (type === "hfsql") {
+    if (type === "odbc") {
       formFields.innerHTML =
         (mode === "add"
           ? '<div class="field"><label for="f_name">Identifiant</label><input id="f_name" autocomplete="off" placeholder="ex. flexi_prod" /></div>'
@@ -1070,7 +1070,7 @@
       }
     }
     let entry;
-    if (type === "hfsql") {
+    if (type === "odbc") {
       const dsn = document.getElementById("f_dsn").value.trim();
       if (!dsn) {
         setFormError("La chaîne DSN est obligatoire.");
@@ -1159,7 +1159,7 @@
     else if (overlayDelete.classList.contains("open")) closeOverlay(overlayDelete);
   });
 
-  ["def-hfsql", "def-mysql", "def-mssql"].forEach(function (id) {
+  ["def-odbc", "def-mysql", "def-mssql"].forEach(function (id) {
     document.getElementById(id).addEventListener("change", function () {
       if (config) config.defaults = readDefaultsFromForm();
     });

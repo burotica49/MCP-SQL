@@ -1,7 +1,7 @@
 {
-  "name": "hfsql-mcp-server",
+  "name": "odbc-mcp-server",
   "version": "1.0.0",
-  "description": "Serveur MCP Streamable HTTP : HFSQL (ODBC), MySQL, Microsoft SQL Server",
+  "description": "Serveur MCP Streamable HTTP : ODBC, MySQL, Microsoft SQL Server",
   "main": "index.js",
   "scripts": {
     "start": "tsx src/index.ts",

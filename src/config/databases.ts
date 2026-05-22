@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const connectionNameRegex = /^[a-zA-Z0-9_-]+$/;
 
-const hfsqlEntrySchema = z.object({
+const odbcEntrySchema = z.object({
   dsn: z.string().min(1),
 });
 
@@ -29,14 +29,14 @@ const mssqlEntrySchema = z.object({
 export const databasesFileSchema = z.object({
   defaults: z
     .object({
-      hfsql: z.string().optional(),
+      odbc: z.string().optional(),
       mysql: z.string().optional(),
       mssql: z.string().optional(),
     })
     .optional(),
   databases: z
     .object({
-      hfsql: z.record(z.string(), hfsqlEntrySchema).optional(),
+      odbc: z.record(z.string(), odbcEntrySchema).optional(),
       mysql: z.record(z.string(), mysqlEntrySchema).optional(),
       mssql: z.record(z.string(), mssqlEntrySchema).optional(),
     })
@@ -53,7 +53,7 @@ let cache: { resolvedPath: string; config: DatabasesFileConfig | null } | null =
 function emptyNormalized(): DatabasesFileConfig {
   return {
     defaults: {},
-    databases: { hfsql: {}, mysql: {}, mssql: {} },
+    databases: { odbc: {}, mysql: {}, mssql: {} },
   };
 }
 
@@ -106,7 +106,7 @@ export function getDatabasesConfigNormalized(): DatabasesFileConfig {
   return {
     defaults: { ...base.defaults, ...cfg.defaults },
     databases: {
-      hfsql: { ...base.databases!.hfsql, ...cfg.databases?.hfsql },
+      odbc: { ...base.databases!.odbc, ...cfg.databases?.odbc },
       mysql: { ...base.databases!.mysql, ...cfg.databases?.mysql },
       mssql: { ...base.databases!.mssql, ...cfg.databases?.mssql },
     },

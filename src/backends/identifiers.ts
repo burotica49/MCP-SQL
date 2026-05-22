@@ -1,4 +1,4 @@
-/** HFSQL / ODBC : nom de table simple uniquement. */
+/** ODBC / ODBC : nom de table simple uniquement. */
 export function assertSimpleTableName(table: string) {
   if (!/^[a-zA-Z0-9_]+$/.test(table)) {
     throw new Error("Nom de table invalide (lettres, chiffres, _ uniquement).");

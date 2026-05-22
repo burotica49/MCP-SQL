@@ -25,19 +25,19 @@ function findEntryInSection<T extends Record<string, unknown>>(
 }
 
 /**
- * `type` dans l’URL : `hfsql` (défaut si absent), `mysql`, `mssql` (alias `sqlserver`).
+ * `type` dans l’URL : `odbc` (défaut si absent), `mysql`, `mssql` (alias `sqlserver`).
  * Valeur inconnue → erreur explicite.
  */
 export function parseBackendType(raw: unknown): BackendType {
   if (raw == null || String(raw).trim() === "") {
-    return "hfsql";
+    return "odbc";
   }
   const s = String(raw).toLowerCase().trim();
-  if (s === "hfsql") return "hfsql";
+  if (s === "odbc") return "odbc";
   if (s === "mysql") return "mysql";
   if (s === "mssql" || s === "sqlserver") return "mssql";
   throw new Error(
-    `Paramètre type invalide : «${s}». Utilisez hfsql, mysql ou mssql.`
+    `Paramètre type invalide : «${s}». Utilisez odbc, mysql ou mssql.`
   );
 }
 
@@ -66,10 +66,10 @@ async function backendFromJsonEntry(
   databaseOverride?: string
 ): Promise<DatabaseBackend> {
   switch (type) {
-    case "hfsql": {
-      const { getHfsqlBackendForDsn } = await import("./hfsql-odbc");
+    case "odbc": {
+      const { getOdbcBackendForDsn } = await import("./odbc");
       const e = entry as { dsn: string };
-      return getHfsqlBackendForDsn(e.dsn);
+      return getOdbcBackendForDsn(e.dsn);
     }
     case "mysql": {
       const { getMysqlBackendForConfig } = await import("./mysql-backend");
@@ -127,9 +127,9 @@ export async function resolveBackend(
   }
 
   switch (type) {
-    case "hfsql": {
-      const { getHfsqlBackend } = await import("./hfsql-odbc");
-      return getHfsqlBackend();
+    case "odbc": {
+      const { getOdbcBackend } = await import("./odbc");
+      return getOdbcBackend();
     }
     case "mysql": {
       const { getMysqlBackend } = await import("./mysql-backend");
