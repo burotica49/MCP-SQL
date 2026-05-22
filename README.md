@@ -46,8 +46,8 @@ Si un **`defaults.<type>`** est renseigné mais la clé est absente ou la sectio
 
 ## Prérequis
 
-- NODE JS 24 (https://nodejs.org/fr)
-- GIT (https://git-scm.com/install)
+- **NODE JS 24** (https://nodejs.org/fr)
+- **GIT** (https://git-scm.com/install)
 - **HFSQL** : installation en local sur un PC Windows avec driver ODBC HFSQL (pcsoft.fr), Node.js.
 - **MySQL / MSSQL** : Node.js ; accès réseau au serveur SQL ; variables d’environnement (voir `env.example`).
 
