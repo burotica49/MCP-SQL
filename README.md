@@ -63,7 +63,8 @@ Ouvre `odbcad32.exe` → Sources de données système → Ajouter → driver HFS
 ## Installation
 
 ```cmd
-cd C:\chemin\vers\mcp-server
+mkdir C:\mcp-server
+cd C:\mcp-server
 git clone  https://github.com/burotica49/MCP-SQL.git
 npm install
 ```
