@@ -6,6 +6,24 @@ import {
 } from "../config/databases";
 import type { BackendType, DatabaseBackend } from "./types";
 
+/** Clé JSON insensible à la casse (ex. URL `name=flexigestion` ↔ entrée `Flexigestion`). */
+function findEntryInSection<T extends Record<string, unknown>>(
+  section: T | undefined,
+  name: string
+): { key: string; entry: T[string] } | undefined {
+  if (!section || !name) return undefined;
+  if (Object.prototype.hasOwnProperty.call(section, name)) {
+    return { key: name, entry: section[name as keyof T] as T[string] };
+  }
+  const lower = name.toLowerCase();
+  for (const key of Object.keys(section)) {
+    if (key.toLowerCase() === lower) {
+      return { key, entry: section[key as keyof T] as T[string] };
+    }
+  }
+  return undefined;
+}
+
 /**
  * `type` dans l’URL : `hfsql` (défaut si absent), `mysql`, `mssql` (alias `sqlserver`).
  * Valeur inconnue → erreur explicite.
@@ -86,25 +104,25 @@ export async function resolveBackend(
     const defaultName = fileCfg.defaults?.[type];
 
     if (explicitName) {
-      const entry = section?.[explicitName];
-      if (!entry) {
+      const found = findEntryInSection(section, explicitName);
+      if (!found) {
         const avail = section ? Object.keys(section).join(", ") : "(aucune)";
         throw new Error(
           `Connexion «${explicitName}» introuvable pour type=${type}. Disponibles : ${avail}`
         );
       }
-      return backendFromJsonEntry(type, entry, opts.database);
+      return backendFromJsonEntry(type, found.entry, opts.database);
     }
 
     if (typeof defaultName === "string" && defaultName.length > 0) {
-      const entry = section?.[defaultName];
-      if (!entry) {
+      const found = findEntryInSection(section, defaultName);
+      if (!found) {
         const avail = section ? Object.keys(section).join(", ") : "(aucune)";
         throw new Error(
           `Défaut defaults.${type}=«${defaultName}» introuvable dans databases.json. Connexions : ${avail}`
         );
       }
-      return backendFromJsonEntry(type, entry, opts.database);
+      return backendFromJsonEntry(type, found.entry, opts.database);
     }
   }
 

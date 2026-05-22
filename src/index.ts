@@ -197,9 +197,27 @@ app.all("/mcp", express.json(), async (req, res) => {
     sessionIdGenerator: undefined,
   });
   const server = buildServer(backend, backendType);
-  await server.connect(transport);
-  await transport.handleRequest(req, res, req.body);
-  await server.close();
+  try {
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const stack = e instanceof Error ? e.stack : undefined;
+    console.error("[mcp] transport / MCP:", msg, stack ? "\n" + stack : "");
+    if (!res.headersSent) {
+      res.status(500).json({ error: msg });
+    }
+  } finally {
+    try {
+      await server.close();
+    } catch (closeErr) {
+      console.error("[mcp] server.close:", closeErr);
+    }
+  }
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[unhandledRejection]", reason, promise);
 });
 
 app.listen(PORT, () => {

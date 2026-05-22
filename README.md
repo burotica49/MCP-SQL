@@ -61,6 +61,36 @@ Ouvre `odbcad32.exe` → Sources de données système → Ajouter → driver HFS
 * Nom (DSN) de ton choix
 * Dossier `.wdd`, dossier fichiers, test de connexion
 
+### Tester ODBC depuis Node
+
+Le projet est en **CommonJS** : avec `npx tsx -e`, le **top-level `await`** n’est pas toujours supporté. Préfère :
+
+```cmd
+npm run test:odbc -- "DSN=Flexigestion"
+```
+
+(ou sans argument si `HFSQL_DSN` est dans `.env`) — le script utilise **`tables()`** ODBC, pas `SELECT 1` (HFSQL peut échouer sur `SELECT 1` à cause de la pseudo-table `###DUAL0###`).
+
+Requête **optionnelle** sur une vraie table :
+
+```cmd
+npm run test:odbc -- "DSN=Flexi" "SELECT TOP 5 * FROM MaTable"
+```
+
+Sinon, enveloppe le code dans une **async IIFE** :
+
+```cmd
+npx tsx -e "import odbc from 'odbc'; void (async()=>{ const c=await odbc.connect('DSN=Flexigestion'); console.log((await c.tables(null,null,null,'TABLE')).slice(0,3)); await c.close(); })().catch(e=>{console.error(e);process.exit(1)})"
+```
+
+### ODBC en production (test OK, MCP KO)
+
+Si `npm run test:odbc` réussit **dans ta session** mais le serveur MCP logue `[odbc] Error connecting to the database` :
+
+1. **DSN « Utilisateur » vs « Système »** : en console tu utilises ton compte ; le site (IIS, service Windows, PM2 lancé autrement) tourne souvent sous **un autre compte** qui **ne voit pas** les DSN utilisateur. Recrée le DSN dans **Sources de données système** (`odbcad32.exe` depuis `System32`, pas `SysWOW64` si Node 64 bits).
+2. **`databases.json`** : pour `name=flexigestion`, la propriété **`dsn`** doit être **exactement** la même chaîne que celle qui marche au test (ex. `DSN=Flexigestion`). Les clés d’entrée sont maintenant **reconnues sans tenir compte de la casse** (`flexigestion` = `Flexigestion`).
+3. **Droits fichiers** : le compte du pool IIS / du service doit lire le `.wdd` et le dossier des fichiers HFSQL (même logique que pour WinDev en service).
+
 ---
 
 ## Installation sur Windows

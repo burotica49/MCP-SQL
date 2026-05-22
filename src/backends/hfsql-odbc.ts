@@ -5,6 +5,15 @@ import type { DatabaseBackend } from "./types";
 /** Une connexion ODBC par chaîne DSN (plusieurs bases HFSQL possibles). */
 const connections = new Map<string, odbc.Connection>();
 
+const ODBC_HINT =
+  "Sous Windows : créer le DSN en source « Système » (pas seulement utilisateur) dans odbcad32 64 bits si Node est 64 bits ; le compte du service (IIS APPPOOL\\…, SYSTEM, etc.) doit voir le même DSN que celui testé en console.";
+
+function formatOdbcConnectError(dsn: string, err: unknown): Error {
+  const base = err instanceof Error ? err.message : String(err);
+  const safe = dsn.replace(/password=[^;]*/gi, "password=***");
+  return new Error(`${base} (DSN : ${safe}). ${ODBC_HINT}`);
+}
+
 function createBackend(conn: odbc.Connection): DatabaseBackend {
   return {
     async listTables() {
@@ -28,7 +37,11 @@ function createBackend(conn: odbc.Connection): DatabaseBackend {
 
 export async function getHfsqlBackendForDsn(dsn: string): Promise<DatabaseBackend> {
   if (!connections.has(dsn)) {
-    connections.set(dsn, await odbc.connect(dsn));
+    try {
+      connections.set(dsn, await odbc.connect(dsn));
+    } catch (e) {
+      throw formatOdbcConnectError(dsn, e);
+    }
   }
   const conn = connections.get(dsn)!;
   return createBackend(conn);
