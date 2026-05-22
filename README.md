@@ -115,14 +115,14 @@ Commandes utiles :
 
 
 ```cmd
-schtasks /run /tn "HFSQL MCP Server" # démarrer
-schtasks /query /tn "HFSQL MCP Server" # statut
-schtasks /end /tn "HFSQL MCP Server" # arrêter 
-schtasks /delete /tn "HFSQL MCP Server" /f # supprimer
+schtasks /run /tn "SQL MCP Server" # démarrer
+schtasks /query /tn "SQL MCP Server" # statut
+schtasks /end /tn "SQL MCP Server" # arrêter 
+schtasks /delete /tn "SQL MCP Server" /f # supprimer
 ```
 
 
-## Ouvrir le pare-feu Windows
+## Ouvrir le pare-feu Windows pour un usage local, non nécesssaire avec un tunnel Cloudflare
 Pare-feu (exemple port 3333) :
 
 ```cmd
@@ -131,7 +131,7 @@ netsh advfirewall firewall add rule name="SQL MCP" dir=in action=allow protocol=
 
 ---
 
-## Claude Desktop (exemple)
+## Claude Desktop usage local (exemple)
 
 Fichier `~/Library/Application Support/Claude/claude_desktop_config.json` :
 
@@ -159,8 +159,14 @@ Adapter l’URL (`type=`, `database=` si besoin).
 ## Tunnel Cloudflare
 
 Il faudra configurer un tunnel Cloudflare pour l'uitilser avec votre agent IA de n'impporte où
+
+
+## Configuration du MCP 
+
+Ajouter un connecteur abec l'URL du type 
+
 ```txt
-https://mon-domaine.com/mcp?token=SECRET&type=hfsql&name=flexi
+https://mon-domaine.com/mcp?token=SECRET&type=hfsql&name=ma_base
 ```
 
 ---
