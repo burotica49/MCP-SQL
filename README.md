@@ -46,6 +46,8 @@ Si un **`defaults.<type>`** est renseigné mais la clé est absente ou la sectio
 
 ## Prérequis
 
+- NODE JS 24 (https://nodejs.org/fr)
+- GIT (https://git-scm.com/install)
 - **HFSQL** : installation en local sur un PC Windows avec driver ODBC HFSQL (pcsoft.fr), Node.js.
 - **MySQL / MSSQL** : Node.js ; accès réseau au serveur SQL ; variables d’environnement (voir `env.example`).
 
@@ -53,6 +55,7 @@ Si un **`defaults.<type>`** est renseigné mais la clé est absente ou la sectio
 
 ## HFSQL : source de données ODBC
 
+Installer le Driver ODBC pour HFSQL (Windows)(https://download.windev.com/fr/download/neo/HFSQL/2026.awp)
 Ouvre `odbcad32.exe` → Sources de données système → Ajouter → driver HFSQL :
 
 * Nom (DSN) de ton choix
@@ -60,10 +63,12 @@ Ouvre `odbcad32.exe` → Sources de données système → Ajouter → driver HFS
 
 ---
 
-## Installation
+## Installation sur Windows
 
 ```cmd
-cd C:\chemin\vers\mcp-server
+C:
+git clone  https://github.com/burotica49/MCP-SQL.git
+cd C:\MCP-SQL
 npm install
 ```
 
@@ -103,7 +108,7 @@ Voir **`env.example`** pour la liste complète.
 ## Service Windows (exemple tâche planifiée)
 
 ```cmd
-schtasks /create /tn "SQL MCP Server" /tr "cmd /c cd /d C:\mcp-server && npx tsx src/index.ts >> C:\mcp-server\logs\output.log 2>&1" /sc onstart /ru SYSTEM /f
+schtasks /create /tn "SQL MCP Server" /tr "cmd /c cd /d C:\MCP-SQL && npx tsx src/index.ts >> C:\MCP-SQL\logs\output.log 2>&1" /sc onstart /ru SYSTEM /f
 ```
 
 Commandes utiles :
@@ -151,8 +156,9 @@ Adapter l’URL (`type=`, `database=` si besoin).
 
 ---
 
-## ChatGPT / tunnel Cloudflare
+## Tunnel Cloudflare
 
+Il faudra configurer un tunnel Cloudflare pour l'uitilser avec votre agent IA de n'impporte où
 ```txt
 https://mon-domaine.com/mcp?token=SECRET&type=hfsql&name=flexi
 ```
