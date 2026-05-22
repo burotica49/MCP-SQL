@@ -1,3 +1,4 @@
+import type { Request } from "express";
 import { Router } from "express";
 import { ZodError } from "zod";
 import {
@@ -8,6 +9,51 @@ import {
 
 export const adminApiRouter = Router();
 
+/** URL MCP publique : `URL_PUBLIC` + `/mcp` + query ; jeton = `API_KEY`. */
+function buildMcpUrlFromEnv(req: Request, type: string, name: string): {
+  url: string;
+  usedFallbackBase: boolean;
+} {
+  const apiKey = process.env.API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error("API_KEY manquant dans l’environnement.");
+  }
+
+  const publicRaw = process.env.URL_PUBLIC?.trim();
+  let u: URL;
+  let usedFallbackBase = false;
+
+  if (publicRaw) {
+    const normalized = /^https?:\/\//i.test(publicRaw) ? publicRaw : `https://${publicRaw}`;
+    let base: URL;
+    try {
+      base = new URL(normalized);
+    } catch {
+      throw new Error("URL_PUBLIC invalide (URL mal formée).");
+    }
+    const p = base.pathname.replace(/\/$/, "");
+    if (!p || p === "/") {
+      u = new URL("/mcp", base.origin);
+    } else {
+      u = new URL(`${p}/mcp`, base.origin);
+    }
+  } else {
+    usedFallbackBase = true;
+    const proto = (req.get("x-forwarded-proto") || req.protocol)
+      .split(",")[0]
+      .trim();
+    const host = (req.get("x-forwarded-host") || req.get("host") || "localhost")
+      .split(",")[0]
+      .trim();
+    u = new URL(`${proto}://${host}/mcp`);
+  }
+
+  u.searchParams.set("type", type);
+  u.searchParams.set("name", name);
+  u.searchParams.set("token", apiKey);
+  return { url: u.toString(), usedFallbackBase };
+}
+
 adminApiRouter.use((_req, res, next) => {
   if (!process.env.API_KEY?.trim()) {
     return res.status(503).json({
@@ -16,6 +62,35 @@ adminApiRouter.use((_req, res, next) => {
     });
   }
   next();
+});
+
+adminApiRouter.get("/mcp-url", (req, res) => {
+  const type = String(req.query.type ?? "")
+    .toLowerCase()
+    .trim();
+  const name = String(req.query.name ?? "").trim();
+
+  if (type !== "hfsql" && type !== "mysql" && type !== "mssql") {
+    return res.status(400).json({
+      error: "Paramètre type requis : hfsql, mysql ou mssql.",
+    });
+  }
+  try {
+    assertValidConnectionName(name);
+  } catch (e) {
+    return res.status(400).json({
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+
+  try {
+    const { url, usedFallbackBase } = buildMcpUrlFromEnv(req, type, name);
+    res.json({ url, usedFallbackBase });
+  } catch (e) {
+    res.status(500).json({
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
 });
 
 adminApiRouter.get("/config", (_req, res) => {

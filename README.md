@@ -40,7 +40,7 @@ Si un **`defaults.<type>`** est renseigné mais la clé est absente ou la sectio
 - Ouvre **`http://localhost:PORT/admin?token=VOTRE_API_KEY`** (la clé est la même que **`API_KEY`** dans `.env`).
 - Sans **`API_KEY`**, l’admin n’est pas activée (réponse 503).
 - Actions : voir toutes les connexions par moteur, éditer les **defaults**, **ajouter** une connexion, **modifier**, **supprimer** (avec confirmation). **Enregistrer tout** écrit le fichier sur disque (validation Zod côté serveur).
-- API : `GET /admin/api/config`, `PUT /admin/api/config` (corps = JSON complet), `DELETE /admin/api/connection/:type/:name`.
+- API : `GET /admin/api/config`, `PUT /admin/api/config` (corps = JSON complet), `DELETE /admin/api/connection/:type/:name`, `GET /admin/api/mcp-url?type=&name=` (URL MCP avec `URL_PUBLIC` + `API_KEY` depuis `.env`).
 
 ---
 
@@ -93,7 +93,7 @@ Réponse attendue : `{"status":"ok"}`
 
 Voir **`env.example`** pour la liste complète.
 
-- **Commun** : `PORT`, `API_KEY`, `ALLOWED_IPS`, `MCP_DATABASES_FILE` (chemin optionnel vers le JSON)
+- **Commun** : `PORT`, `API_KEY`, `URL_PUBLIC` (URL de base pour les liens MCP générés dans l’admin ; optionnel, sinon hôte de la requête), `ALLOWED_IPS`, `MCP_DATABASES_FILE` (chemin optionnel vers le JSON)
 - **HFSQL** : `HFSQL_DSN`
 - **MySQL** : `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`
 - **MSSQL** : `MSSQL_SERVER`, `MSSQL_PORT`, `MSSQL_USER`, `MSSQL_PASSWORD`, `MSSQL_DATABASE`, `MSSQL_ENCRYPT`, `MSSQL_TRUST_SERVER_CERTIFICATE`

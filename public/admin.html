@@ -426,6 +426,31 @@
     .chk input { width: auto; accent-color: var(--accent); }
     .chk label { margin: 0; font-size: 0.8125rem; color: var(--text2); cursor: pointer; }
 
+    .panel-body textarea.url-field {
+      width: 100%;
+      min-height: 5.5rem;
+      resize: vertical;
+      font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      word-break: break-all;
+    }
+    .url-label {
+      display: block;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    .url-hint {
+      margin: 0.65rem 0 0;
+      font-size: 0.78rem;
+      color: var(--text2);
+      line-height: 1.4;
+    }
+
     /* Snackbar succès (pas une alerte native) */
     #snackbar {
       position: fixed;
@@ -561,6 +586,28 @@
     </div>
   </div>
 
+  <!-- Modale URL MCP -->
+  <div class="overlay" id="overlay-url" role="dialog" aria-modal="true" aria-labelledby="url-title">
+    <div class="panel panel-wide">
+      <div class="panel-head">
+        <div>
+          <h3 id="url-title">URL MCP</h3>
+          <p>Point d’entrée Streamable HTTP pour cette connexion (<code>type</code> + <code>name</code>).</p>
+        </div>
+        <button type="button" class="btn-close" id="url-close" aria-label="Fermer">×</button>
+      </div>
+      <div class="panel-body">
+        <label class="url-label" for="url-field">URL à configurer</label>
+        <textarea id="url-field" class="url-field" readonly rows="4" spellcheck="false"></textarea>
+        <p class="url-hint" id="url-hint"></p>
+      </div>
+      <div class="panel-foot">
+        <button type="button" class="btn btn-ghost" id="url-cancel">Fermer</button>
+        <button type="button" class="btn btn-primary" id="url-copy">Copier</button>
+      </div>
+    </div>
+  </div>
+
   <div id="snackbar" role="status" aria-live="polite"></div>
 
   <script>
@@ -587,6 +634,7 @@
   const overlayForm = document.getElementById("overlay-form");
   const overlayDelete = document.getElementById("overlay-delete");
   const overlayMsg = document.getElementById("overlay-msg");
+  const overlayUrl = document.getElementById("overlay-url");
   const formError = document.getElementById("form-error");
   const formFields = document.getElementById("form-fields");
   const formTitle = document.getElementById("form-title");
@@ -601,6 +649,67 @@
     snackTimer = setTimeout(function () {
       snackbar.classList.remove("show");
     }, 2800);
+  }
+
+  async function openUrlModal(type, name) {
+    let r;
+    try {
+      r = await fetch(
+        "/admin/api/mcp-url?" +
+          new URLSearchParams({ type: type, name: name }).toString(),
+        { headers: headers() }
+      );
+    } catch (e) {
+      openMsg(
+        "Réseau",
+        "Impossible d’appeler le serveur pour générer l’URL.",
+        true
+      );
+      return;
+    }
+    const j = await r.json().catch(function () {
+      return {};
+    });
+    if (!r.ok) {
+      openMsg(
+        "URL MCP",
+        j.error || "Impossible de générer l’URL (" + r.status + ").",
+        true
+      );
+      return;
+    }
+    document.getElementById("url-field").value = j.url || "";
+    const hintEl = document.getElementById("url-hint");
+    if (j.usedFallbackBase) {
+      hintEl.textContent =
+        "URL_PUBLIC n’est pas défini : l’hôte est déduit de ta requête actuelle. Le jeton correspond à API_KEY sur le serveur. Pour la production, définis URL_PUBLIC dans .env (ex. ton domaine Cloudflare).";
+    } else {
+      hintEl.textContent =
+        "URL générée côté serveur à partir de URL_PUBLIC et API_KEY (.env). Ne diffuse pas cette URL publiquement.";
+    }
+    openOverlay(overlayUrl);
+    setTimeout(function () {
+      const el = document.getElementById("url-field");
+      el.focus();
+      el.select();
+    }, 100);
+  }
+
+  async function copyUrlToClipboard() {
+    const el = document.getElementById("url-field");
+    const text = el.value;
+    try {
+      await navigator.clipboard.writeText(text);
+      showSnack("URL copiée dans le presse-papiers", true);
+    } catch (err) {
+      try {
+        el.select();
+        document.execCommand("copy");
+        showSnack("URL copiée", true);
+      } catch (e2) {
+        openMsg("Copie impossible", "Sélectionne le texte manuellement (Ctrl+A puis Ctrl+C).", true);
+      }
+    }
   }
 
   function openMsg(title, body, isError) {
@@ -623,6 +732,10 @@
     if (!document.querySelector(".overlay.open")) {
       document.documentElement.style.overflow = "";
     }
+  }
+
+  function closeUrlModal() {
+    closeOverlay(overlayUrl);
   }
 
   let config = null;
@@ -768,6 +881,14 @@
           meta +
           '</td><td class="cell-actions"></td>';
         const actions = tr.querySelector(".cell-actions");
+        const bUrl = document.createElement("button");
+        bUrl.type = "button";
+        bUrl.className = "btn btn-ghost btn-sm";
+        bUrl.textContent = "URL MCP";
+        bUrl.title = "Afficher l’URL à configurer côté client";
+        bUrl.addEventListener("click", function () {
+          openUrlModal(type, name);
+        });
         const bEd = document.createElement("button");
         bEd.type = "button";
         bEd.className = "btn btn-ghost btn-sm";
@@ -782,6 +903,7 @@
         bDel.addEventListener("click", function () {
           openDeleteModal(type, name);
         });
+        actions.appendChild(bUrl);
         actions.appendChild(bEd);
         actions.appendChild(bDel);
         tb.appendChild(tr);
@@ -1024,9 +1146,15 @@
   document.getElementById("msg-ok").addEventListener("click", closeMsg);
   wireOverlayClose(overlayMsg, closeMsg);
 
+  document.getElementById("url-close").addEventListener("click", closeUrlModal);
+  document.getElementById("url-cancel").addEventListener("click", closeUrlModal);
+  document.getElementById("url-copy").addEventListener("click", copyUrlToClipboard);
+  wireOverlayClose(overlayUrl, closeUrlModal);
+
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
     if (overlayMsg.classList.contains("open")) closeMsg();
+    else if (overlayUrl.classList.contains("open")) closeUrlModal();
     else if (overlayForm.classList.contains("open")) closeFormModal();
     else if (overlayDelete.classList.contains("open")) closeOverlay(overlayDelete);
   });
