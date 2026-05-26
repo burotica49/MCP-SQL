@@ -226,7 +226,7 @@ Express : /mcp?type=odbc|mysql|mssql&token=…&name=…&database=…
 Résolution : databases.json (optionnel) puis .env
     │
     ▼
-Backend : odbc-odbc.ts | mysql-backend.ts | mssql-backend.ts
+Backend : odbc.ts | mysql-backend.ts | mssql-backend.ts
     │
     ▼
 ODBC (.fic) / MySQL / SQL Server
