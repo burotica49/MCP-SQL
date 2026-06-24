@@ -21,5 +21,9 @@ export function applySqlServerTop(sql: string, maxRows: number): string {
     text = text.replace(simpleLimit, "");
   }
 
+  if (!Number.isInteger(cap) || cap < 0) {
+    throw new Error('Invalid input');
+  }
+
   return text.replace(/^\s*SELECT/i, `SELECT TOP ${cap}`);
 }
