@@ -2,6 +2,8 @@ import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
 import express from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -15,9 +17,18 @@ import {
 } from "./backends/factory";
 import { adminApiRouter } from "./admin/router";
 import { getDatabasesFilePath, loadDatabasesFileConfig } from "./config/databases";
+import { applySqlServerTop } from "./backends/sqlserver-top";
+import { assertReadOnlySelect } from "./backends/sql-readonly-guard";
 
 const PORT = process.env.PORT || 3333;
-const API_KEY = process.env.API_KEY;
+const API_KEY = process.env.API_KEY?.trim();
+if (!API_KEY) {
+  console.error("❌ API_KEY obligatoire : définissez-le dans .env");
+  process.exit(1);
+}
+const IS_DEV = process.env.NODE_ENV !== "production";
+/** Claude / ChatGPT MCP : pas d’en-têtes custom → jeton dans l’URL (`?token=`). Désactiver : `ALLOW_URL_TOKEN=false`. */
+const ALLOW_URL_TOKEN = process.env.ALLOW_URL_TOKEN !== "false";
 const ALLOWED_IPS: string[] = process.env.ALLOWED_IPS
   ? process.env.ALLOWED_IPS.split(",").map((ip) => ip.trim())
   : [];
@@ -30,6 +41,33 @@ function backendLabel(type: BackendType): string {
       return "MySQL";
     case "mssql":
       return "Microsoft SQL Server";
+    default: {
+      const _e: never = type;
+      return _e;
+    }
+  }
+}
+
+/** Texte visible par le modèle dans le catalogue d’outils MCP : dialecte SQL attendu. */
+function queryToolDescription(type: BackendType): string {
+  const label = backendLabel(type);
+  const intro = `Exécute une requête SELECT en lecture seule (${label}). Interdit : INSERT, UPDATE, DELETE, DDL, procédures stockées hors simple SELECT.`;
+
+  switch (type) {
+    case "mysql":
+      return (
+        `${intro} Dialecte MySQL : LIMIT autorisé dans le SQL ; sinon le serveur peut ajouter LIMIT selon le paramètre limit.`
+      );
+    case "mssql":
+      return (
+        `${intro} Dialecte Transact-SQL : ne pas utiliser LIMIT ; borner avec le paramètre limit (TOP injecté côté serveur). ` +
+        `Exemple : SELECT * FROM dbo.MaTable ORDER BY Date DESC avec limit=1.`
+      );
+    case "odbc":
+      return (
+        `${intro} Plafond style T-SQL (TOP) : ne pas mettre LIMIT dans le SQL ; utiliser le paramètre limit. ` +
+        `Exemple : SELECT * FROM MaTable ORDER BY Date DESC avec limit=1.`
+      );
     default: {
       const _e: never = type;
       return _e;
@@ -72,23 +110,100 @@ function buildServer(backend: DatabaseBackend, type: BackendType) {
 
   server.tool(
     "query",
-    `Exécute une requête SELECT uniquement (${label})`,
-    { sql: z.string(), limit: z.number().optional().default(100) },
+    queryToolDescription(type),
+    {
+      sql: z
+        .string()
+        .describe(
+          type === "mysql"
+            ? "Requête SELECT (MySQL). LIMIT optionnel ; sinon utiliser limit."
+            : type === "odbc"
+              ? "Requête SELECT sans LIMIT (ODBC + TOP) : borner avec limit."
+              : "Requête SELECT T-SQL sans LIMIT : borner avec limit."
+        ),
+      limit: z
+        .number()
+        .optional()
+        .default(100)
+        .describe("Nombre maximum de lignes renvoyées (TOP côté serveur pour MSSQL/ODBC)."),
+    },
     async ({ sql, limit }) => {
-      if (!/^\s*SELECT/i.test(sql.trim())) {
-        return { content: [{ type: "text", text: "❌ SELECT uniquement." }] };
+      try {
+        assertReadOnlySelect(sql);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return { content: [{ type: "text", text: `❌ ${msg}` }] };
       }
       const rows = await backend.runSelect(sql, limit);
-      return {
-        content: [{ type: "text", text: JSON.stringify(rows, null, 2) }],
-      };
+      const text = JSON.stringify(
+        rows,
+        (_k, v) => (typeof v === "bigint" ? v.toString() : v),
+        2
+      );
+      const content: { type: "text"; text: string }[] = [
+        { type: "text", text },
+      ];
+      if (rows.length === 0 && (type === "odbc" || type === "mssql")) {
+        const executed = applySqlServerTop(sql, limit);
+        content.push({
+          type: "text",
+          text:
+            `0 ligne : la requête s’est exécutée sans erreur mais le moteur n’a renvoyé aucun enregistrement.\n` +
+            `SQL normalisé (TOP / retrait LIMIT) :\n${executed}\n` +
+            `À vérifier : bonne base / DSN, schéma (ex. dbo.ENTFACTURE), table réellement peuplée, filtres implicites, ` +
+            `et identifiants entre crochets si mot réservé (ex. ORDER BY [DATE]).`,
+        });
+      }
+      return { content };
     }
   );
 
   return server;
 }
 
+function redactUrl(url: string): string {
+  return url.replace(/([?&]token=)[^&]+/gi, "$1***");
+}
+
+function isApiKeyValid(req: express.Request): boolean {
+  if (req.headers["x-api-key"] === API_KEY) return true;
+  if (ALLOW_URL_TOKEN && req.path === "/mcp") {
+    const fromQuery = req.query.token;
+    if (typeof fromQuery === "string" && fromQuery === API_KEY) return true;
+  }
+  return false;
+}
+
 const app = express();
+
+app.set("trust proxy", 1);
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "script-src": ["'self'", "'unsafe-inline'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+      },
+    },
+  })
+);
+
+const apiLimiter = rateLimit({
+  windowMs: 60_000,
+  max: parseInt(process.env.RATE_LIMIT_MAX ?? "120", 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Trop de requêtes, réessayez plus tard." },
+});
+
+function isPublicRoute(req: express.Request): boolean {
+  if (req.path === "/health") return true;
+  if (req.path === "/admin" && req.method === "GET") return true;
+  if (req.path.startsWith("/.well-known/")) return true;
+  return false;
+}
 
 app.use((req, res, next) => {
   if (ALLOWED_IPS.length === 0) return next();
@@ -105,12 +220,9 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  if (!API_KEY) return next();
+  if (isPublicRoute(req)) return next();
 
-  const keyFromHeader = req.headers["x-api-key"];
-  const keyFromQuery = req.query.token;
-
-  if (keyFromHeader === API_KEY || keyFromQuery === API_KEY) {
+  if (isApiKeyValid(req)) {
     return next();
   }
 
@@ -118,7 +230,9 @@ app.use((req, res, next) => {
 });
 
 app.use((req, _res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(
+    `[${new Date().toISOString()}] ${req.method} ${redactUrl(req.originalUrl)}`
+  );
   next();
 });
 
@@ -132,16 +246,6 @@ app.get("/.well-known/openid-configuration", (_req, res) =>
 );
 
 app.get("/admin", (_req, res) => {
-  if (!API_KEY?.trim()) {
-    return res
-      .status(503)
-      .type("html")
-      .send(
-        "<!DOCTYPE html><html lang=fr><head><meta charset=utf-8><title>Admin</title></head><body>" +
-          "<p>Définissez <code>API_KEY</code> dans <code>.env</code> pour accéder à l’interface de gestion des connexions.</p>" +
-          "</body></html>"
-      );
-  }
   const htmlPath = path.join(process.cwd(), "public", "admin.html");
   if (!fs.existsSync(htmlPath)) {
     return res
@@ -155,9 +259,9 @@ app.get("/admin", (_req, res) => {
   res.type("html").send(fs.readFileSync(htmlPath, "utf8"));
 });
 
-app.use("/admin/api", express.json({ limit: "512kb" }), adminApiRouter);
+app.use("/admin/api", apiLimiter, express.json({ limit: "512kb" }), adminApiRouter);
 
-app.all("/mcp", express.json(), async (req, res) => {
+app.all("/mcp", apiLimiter, express.json(), async (req, res) => {
   let backendType: BackendType;
   let database: string | undefined;
   let connectionName: string | undefined;
@@ -190,7 +294,7 @@ app.all("/mcp", express.json(), async (req, res) => {
     `type=${backendType}`,
     connectionName ? `name=${connectionName}` : "",
     database ? `database=${database}` : "",
-    JSON.stringify(req.body)
+    IS_DEV ? JSON.stringify(req.body) : "(body omis en production)"
   );
 
   const transport = new StreamableHTTPServerTransport({
@@ -232,6 +336,6 @@ app.listen(PORT, () => {
     }
   }
   console.log(
-    `✅ MCP SQL sur http://localhost:${PORT} — /mcp?type=… et admin http://localhost:${PORT}/admin?token=…`
+    `✅ MCP SQL sur http://localhost:${PORT} — /mcp?token=…&type=… (Claude/ChatGPT) ou en-tête x-api-key`
   );
 });

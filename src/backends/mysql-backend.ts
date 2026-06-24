@@ -1,5 +1,6 @@
 import mysql from "mysql2/promise";
 import { assertQualifiedTableName, splitQualifiedTable } from "./identifiers";
+import { assertReadOnlySelect } from "./sql-readonly-guard";
 import type { MysqlEntryConfig } from "../config/databases";
 import type { DatabaseBackend } from "./types";
 
@@ -19,6 +20,8 @@ function poolKey(host: string, port: number, user: string, database: string) {
 
 function createMysqlBackend(pool: mysql.Pool): DatabaseBackend {
   return {
+
+    /** Liste toutes les tables de la base de données. */
     async listTables() {
       const [rows] = await pool.query<mysql.RowDataPacket[]>(
         `SELECT TABLE_NAME AS TABLE_NAME
@@ -30,6 +33,7 @@ function createMysqlBackend(pool: mysql.Pool): DatabaseBackend {
       return rows.map((r) => String(r.TABLE_NAME));
     },
 
+    /** Décrit les colonnes d'une table. */
     async describeTable(table: string) {
       assertQualifiedTableName(table);
       const { schema, name } = splitQualifiedTable(table);
@@ -43,7 +47,9 @@ function createMysqlBackend(pool: mysql.Pool): DatabaseBackend {
       return rows as Record<string, unknown>[];
     },
 
+    /** Exécute une requête SELECT uniquement. */
     async runSelect(sql: string, limit: number) {
+      assertReadOnlySelect(sql);
       const safeSql = applyMysqlLimit(sql, limit);
       const [rows] = await pool.query<mysql.RowDataPacket[]>(safeSql);
       return rows as Record<string, unknown>[];

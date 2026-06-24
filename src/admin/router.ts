@@ -9,7 +9,7 @@ import {
 
 export const adminApiRouter = Router();
 
-/** URL MCP publique : `URL_PUBLIC` + `/mcp` + query ; jeton = `API_KEY`. */
+/** URL MCP publique : `URL_PUBLIC` + `/mcp` + query ; `token` pour Claude / ChatGPT. */
 function buildMcpUrlFromEnv(req: Request, type: string, name: string): {
   url: string;
   usedFallbackBase: boolean;
@@ -54,16 +54,6 @@ function buildMcpUrlFromEnv(req: Request, type: string, name: string): {
   return { url: u.toString(), usedFallbackBase };
 }
 
-adminApiRouter.use((_req, res, next) => {
-  if (!process.env.API_KEY?.trim()) {
-    return res.status(503).json({
-      error:
-        "Définissez API_KEY dans .env pour activer l’interface d’administration.",
-    });
-  }
-  next();
-});
-
 adminApiRouter.get("/mcp-url", (req, res) => {
   const type = String(req.query.type ?? "")
     .toLowerCase()
@@ -85,7 +75,16 @@ adminApiRouter.get("/mcp-url", (req, res) => {
 
   try {
     const { url, usedFallbackBase } = buildMcpUrlFromEnv(req, type, name);
-    res.json({ url, usedFallbackBase });
+    res.json({
+      url,
+      usedFallbackBase,
+      auth: {
+        urlParam: "token",
+        header: "x-api-key",
+        hint:
+          "Claude / ChatGPT : collez l’URL complète (token inclus). Autres clients : préférez l’en-tête x-api-key sans token dans l’URL.",
+      },
+    });
   } catch (e) {
     res.status(500).json({
       error: e instanceof Error ? e.message : String(e),

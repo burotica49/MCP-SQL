@@ -1,5 +1,7 @@
 import sql from "mssql";
 import { assertQualifiedTableName, splitQualifiedTable } from "./identifiers";
+import { assertReadOnlySelect } from "./sql-readonly-guard";
+import { applySqlServerTop } from "./sqlserver-top";
 import type { MssqlEntryConfig } from "../config/databases";
 import type { DatabaseBackend } from "./types";
 
@@ -11,6 +13,7 @@ function poolKey(server: string, port: number, database: string, user: string) {
 
 function createMssqlBackend(pool: sql.ConnectionPool): DatabaseBackend {
   return {
+    /** Liste toutes les tables de la base de données. */
     async listTables() {
       const result = await pool.request().query<{
         TABLE_SCHEMA: string;
@@ -26,6 +29,7 @@ function createMssqlBackend(pool: sql.ConnectionPool): DatabaseBackend {
       );
     },
 
+    /** Décrit les colonnes d'une table. */
     async describeTable(table: string) {
       assertQualifiedTableName(table);
       const { schema, name } = splitQualifiedTable(table);
@@ -57,8 +61,10 @@ function createMssqlBackend(pool: sql.ConnectionPool): DatabaseBackend {
       return result.recordset;
     },
 
+    /** Exécute une requête SELECT uniquement. */
     async runSelect(sqlText: string, limit: number) {
-      const safeSql = sqlText.replace(/^\s*SELECT/i, `SELECT TOP ${limit}`);
+      assertReadOnlySelect(sqlText);
+      const safeSql = applySqlServerTop(sqlText, limit);
       const result = await pool.request().query(safeSql);
       return result.recordset as Record<string, unknown>[];
     },

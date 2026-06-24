@@ -500,8 +500,10 @@
 
     <div class="hint">
       <p>
-        <strong>Exemple d'URL de configuration du MCP :</strong>
-         https://mon-domaine.com/mcp?token=SECRET&type=mysql&name=local&database=autre_base
+        <strong>Exemple d'URL MCP (Claude, ChatGPT) :</strong>
+         https://mon-domaine.com/mcp?token=SECRET&type=mysql&name=local
+        <br />
+        Autres clients : en-tête <code>x-api-key</code> (sans <code>token</code> dans l’URL si possible).
       </p>
     </div>
 
@@ -680,12 +682,15 @@
     }
     document.getElementById("url-field").value = j.url || "";
     const hintEl = document.getElementById("url-hint");
+    const authHint =
+      j.auth?.hint ||
+      "Collez l’URL dans Claude / ChatGPT (token requis). Ne la partagez pas publiquement.";
     if (j.usedFallbackBase) {
       hintEl.textContent =
-        "URL_PUBLIC n’est pas défini : l’hôte est déduit de ta requête actuelle. Le jeton correspond à API_KEY sur le serveur. Pour la production, définis URL_PUBLIC dans .env (ex. ton domaine Cloudflare).";
+        "URL_PUBLIC n’est pas défini : l’hôte est déduit de ta requête actuelle. " + authHint;
     } else {
       hintEl.textContent =
-        "URL générée côté serveur à partir de URL_PUBLIC et API_KEY (.env). Ne diffuse pas cette URL publiquement.";
+        "URL générée à partir de URL_PUBLIC. " + authHint;
     }
     openOverlay(overlayUrl);
     setTimeout(function () {

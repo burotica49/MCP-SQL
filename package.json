@@ -1,6 +1,6 @@
 {
-  "name": "odbc-mcp-server",
-  "version": "1.0.0",
+  "name": "mcp-server",
+  "version": "1.0.1",
   "description": "Serveur MCP Streamable HTTP : ODBC, MySQL, Microsoft SQL Server",
   "main": "index.js",
   "scripts": {
@@ -16,6 +16,8 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "ip-range-check": "^0.2.0",
     "mssql": "^12.5.4",
     "mysql2": "^3.22.3",
@@ -27,5 +29,9 @@
     "@types/node": "^25.9.1",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "hono": ">=4.12.25",
+    "tar": ">=7.5.16"
   }
 }

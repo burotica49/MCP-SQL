@@ -1,5 +1,7 @@
 import odbc from "odbc";
 import { assertSimpleTableName } from "./identifiers";
+import { assertReadOnlySelect } from "./sql-readonly-guard";
+import { applySqlServerTop } from "./sqlserver-top";
 import type { DatabaseBackend } from "./types";
 
 /** Une connexion ODBC par chaîne DSN (plusieurs bases ODBC possibles). */
@@ -16,19 +18,23 @@ function formatOdbcConnectError(dsn: string, err: unknown): Error {
 
 function createBackend(conn: odbc.Connection): DatabaseBackend {
   return {
+    /** Liste toutes les tables de la base de données. */
     async listTables() {
       const tables = await conn.tables(null, null, null, "TABLE");
       return tables.map((t: { TABLE_NAME: string }) => t.TABLE_NAME);
     },
 
+    /** Décrit les colonnes d'une table. */
     async describeTable(table: string) {
       assertSimpleTableName(table);
       const cols = await conn.columns(null, null, table, null);
       return cols as Record<string, unknown>[];
     },
 
+    /** Exécute une requête SELECT uniquement. */
     async runSelect(sql: string, limit: number) {
-      const safeSql = sql.replace(/^\s*SELECT/i, `SELECT TOP ${limit}`);
+      assertReadOnlySelect(sql);
+      const safeSql = applySqlServerTop(sql, limit);
       const rows = await conn.query(safeSql);
       return rows as Record<string, unknown>[];
     },

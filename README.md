@@ -7,7 +7,7 @@ Serveur [MCP](https://modelcontextprotocol.io) en **HTTP streamable** (Express +
 | Paramètre   | Rôle |
 |------------|------|
 | `type`     | **`odbc`** (défaut si absent), **`mysql`**, **`mssql`** (alias `sqlserver`). Valeur inconnue → erreur 400. |
-| `token`    | Même secret que `API_KEY` (clients qui ne gèrent qu’une URL) |
+| `token`    | Même secret que `API_KEY` — **requis pour Claude / ChatGPT** (pas d’en-têtes HTTP custom). Alternative : en-tête `x-api-key` |
 | `name`     | Optionnel : **nom d’une connexion** déclarée dans `databases.json` pour ce `type` (ex. `name=flexi`). Nécessite le fichier JSON. |
 | `database` | Optionnel : base MySQL / SQL Server (surcharge de la base indiquée dans le JSON ou le `.env`). Ignoré pour **ODBC**. |
 
@@ -17,8 +17,9 @@ Exemples :
 https://mon-domaine.com/mcp?token=SECRET&type=odbc&name=flexi
 https://mon-domaine.com/mcp?token=SECRET&type=mysql&name=local&database=autre_base
 https://mon-domaine.com/mcp?token=SECRET&type=mssql&name=erp
-http://192.168.1.10:3333/mcp?type=odbc&token=SECRET
 ```
+
+Clients avec en-têtes HTTP : `x-api-key: VOTRE_API_KEY` (sans `token` dans l’URL). Désactiver `?token=` : `ALLOW_URL_TOKEN=false` dans `.env`.
 
 Sans `databases.json`, le repli se fait sur le **`.env`** (`ODBC_DSN`, `MYSQL_*`, `MSSQL_*`) comme avant.
 
@@ -37,8 +38,8 @@ Si un **`defaults.<type>`** est renseigné mais la clé est absente ou la sectio
 
 ### Interface web (liste / édition / suppression)
 
-- Ouvre **`http://localhost:PORT/admin?token=VOTRE_API_KEY`** (la clé est la même que **`API_KEY`** dans `.env`).
-- Sans **`API_KEY`**, l’admin n’est pas activée (réponse 503).
+- Ouvre **`http://localhost:PORT/admin?token=VOTRE_API_KEY`** une première fois (la clé est stockée en session pour les appels API). Le paramètre `token` sert uniquement à l’admin, pas à `/mcp`.
+- **`API_KEY`** est obligatoire au démarrage du serveur.
 - Actions : voir toutes les connexions par moteur, éditer les **defaults**, **ajouter** une connexion, **modifier**, **supprimer** (avec confirmation). **Enregistrer tout** écrit le fichier sur disque (validation Zod côté serveur).
 - API : `GET /admin/api/config`, `PUT /admin/api/config` (corps = JSON complet), `DELETE /admin/api/connection/:type/:name`, `GET /admin/api/mcp-url?type=&name=` (URL MCP avec `URL_PUBLIC` + `API_KEY` depuis `.env`).
 
